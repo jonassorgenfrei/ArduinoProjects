@@ -36,8 +36,6 @@ MFRC522 mfrc522(SS_PIN, RST_PIN);
 const int chipSelect = 4;
 
 
-
-
 void setup()
 {
   Serial.begin(9600); // start serial monitor
@@ -46,19 +44,21 @@ void setup()
   while (!Serial) {
     ; // wait for serial port to connect. Needed for Leonardo only
   }
+
+  // begin SPI
+  SPI.begin(); 
   
-  SPI.begin(); // SPI-Verbindung
-  mfrc522.PCD_Init(); // init RFID 
+  // init RFID 
+  mfrc522.PCD_Init();
   
 }
-
 
 void openSD() {
 
   uint8_t oldPinMode = getPinMode(10);
   
+  pinMode(10, OUTPUT);
   
-  pinMode(10, OUTPUT);     // change this to 53 on a mega
   // we'll use the initialization code from the utility libraries
   // since we're just testing if the card is working!
   if (!card.init(SPI_HALF_SPEED, chipSelect)) {
@@ -94,6 +94,9 @@ void openSD() {
   }
 
 
+  // PRINT SOME INFOS ABOUT THE SD CARD
+  // ----------------------------------
+
   // print the type and size of the first FAT-type volume
   uint32_t volumesize;
   Serial.print("\nVolume type is FAT");
@@ -112,6 +115,10 @@ void openSD() {
   volumesize /= 1024;
   Serial.println(volumesize);
 
+  // ----------------------------------
+
+  // PRINT LIST OF FILES ON THE SD CARD
+  // ----------------------------------
 
   Serial.println("\nFiles found on the card (name, date and size in bytes): ");
   root.openRoot(volume);
@@ -119,28 +126,36 @@ void openSD() {
   // list all files in the card with date and size
   root.ls(LS_R | LS_DATE | LS_SIZE);
 
+  // -----------------------------------
 
-  pinMode(10, oldPinMode);     // change this to 53 on a mega
+  // DO SOMETHING WITH THE FILES
+
+
+  
+  pinMode(10, oldPinMode);     
 }
 
 void loop(void) {
-
-   if ( ! mfrc522.PICC_IsNewCardPresent())
+  // check if new card is present
+  if ( ! mfrc522.PICC_IsNewCardPresent())
   {
     return;
   }
-  
+
+  // read the serial of the card
   if ( ! mfrc522.PICC_ReadCardSerial())
   {
     return;
   }
-  
+
+  // check if it's card matching the Byte Code
   if(mfrc522.uid.uidByte[0] == 0xF1 &&
       mfrc522.uid.uidByte[1] == 0x38 &&
       mfrc522.uid.uidByte[2] == 0x80 &&
       mfrc522.uid.uidByte[3] == 0x63) {
+        
       Serial.println("RFID-Chip");
       openSD();
-      
+      delay(1000);
   } 
 }
